@@ -1,20 +1,21 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+  runApp(const Application());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class Application extends StatelessWidget {
+  const Application({super.key});
 
   final String mainListTitle = 'Maison';
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Notebook',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         appBarTheme: const AppBarTheme(
@@ -22,51 +23,81 @@ class MyApp extends StatelessWidget {
           foregroundColor: Colors.white,
         ),
       ),
-      home: HomePage(title: mainListTitle, child: const CheckList(items: ["test", "test2"])),
+      home: CheckListPage(title: mainListTitle, items: ["test", "test2"]),
     );
   }
 }
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.title, required this.child});
+class CheckListPage extends StatefulWidget {
+  const CheckListPage({super.key, required this.title, required this.items});
 
   final String title;
 
-  final Widget child;
+  final List<String> items;
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<CheckListPage> createState() => _CheckListPageState();
 }
 
-class _HomePageState extends State<HomePage> {
-
+class _CheckListPageState extends State<CheckListPage> {
   bool _editMode = false;
+
+  final _biggerFont = const TextStyle(fontSize: 18);
 
   @override
   Widget build(BuildContext context) {
+    final items = widget.items.map(
+          (label) {
+            if (_editMode) {
+              return Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: TextFormField(
+                    initialValue: label,
+                    decoration: InputDecoration(
+                      labelText: label.isEmpty ? 'New item' : '',
+                    ),
+                  )
+              );
+            } else {
+              return Item(title: label.toLowerCase());
+            }
+      },
+    );
+
+    final divided = items.isNotEmpty
+        ? ListTile.divideTiles(
+      context: context,
+      tiles: items,
+    ).toList()
+        : <Widget>[];
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(_editMode ? Icons.shopping_cart_outlined : Icons.edit),
-            onPressed: _pushEditMode,
-            tooltip: _editMode ? 'Mode courses' : 'Mode édition',
-          ),
-          IconButton(
-            icon: const Icon(Icons.more_horiz),
-            onPressed: _pushOptions,
-            tooltip: 'Options',
-          ),
-        ],
-      ),
-      body: widget.child
+        appBar: AppBar(
+          title: Text(widget.title),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: Icon(_editMode ? Icons.shopping_cart_outlined : Icons.edit),
+              onPressed: _pushEditMode,
+              tooltip: _editMode ? 'Mode courses' : 'Mode édition',
+            ),
+            IconButton(
+              icon: const Icon(Icons.more_horiz),
+              onPressed: _pushOptions,
+              tooltip: 'Options',
+            ),
+          ],
+        ),
+        body: ListView(children: divided)
     );
   }
 
   void _pushEditMode() {
-    _editMode = !_editMode;
+    // rafraichissement de l'affichage
+    setState(() {
+      // changement de mode
+      _editMode = !_editMode;
+    });
   }
 
   void _pushOptions() {
@@ -77,7 +108,7 @@ class _HomePageState extends State<HomePage> {
               appBar: AppBar(
                 title: Text('"${widget.title}" list options'),
               ),
-              body: ListView(children: <Widget>[]),
+              body: ListView(children: List.empty()),
             );
           },
         )
@@ -85,37 +116,29 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-class CheckList extends StatefulWidget {
-  const CheckList({super.key, required this.items});
+class Item extends StatefulWidget {
+  const Item({super.key, required this.title});
 
-  final List<String> items;
-
+  final String title;
   @override
-  State<CheckList> createState() => _CheckListState();
+  State<Item> createState() => _ItemState();
 }
 
-class _CheckListState extends State<CheckList> {
+class _ItemState extends State<Item> {
   final _biggerFont = const TextStyle(fontSize: 18);
+
+  bool _isSelected = false;
 
   @override
   Widget build(BuildContext context) {
-    final tiles = widget.items.map(
-          (pair) {
-        return ListTile(
-          title: Text(
-            pair.toLowerCase(),
-            style: _biggerFont,
-          ),
-        );
-      },
-    );
-    final divided = tiles.isNotEmpty
-        ? ListTile.divideTiles(
-      context: context,
-      tiles: tiles,
-    ).toList()
-        : <Widget>[];
-
-    return ListView(children: divided);
-  }
+      return CheckboxListTile(
+        title: Text(widget.title, style: _biggerFont),
+        value: _isSelected,
+        onChanged: (bool? newValue) {
+          setState(() {
+            _isSelected = newValue!;
+          });
+        },
+      );
+    }
 }
